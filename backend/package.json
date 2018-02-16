@@ -1,0 +1,25 @@
+{
+    "name": "backend",
+    "version": "1.0.0",
+    "description": "getir hackhathon 2018 ",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/mozanunal/hackhathon-getir-2018-team-paketci.git"
+    },
+    "author": "MOzan Unal",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/mozanunal/hackhathon-getir-2018-team-paketci/issues"
+    },
+    "homepage": "https://github.com/mozanunal/hackhathon-getir-2018-team-paketci#readme",
+    "dependencies": {
+        "body-parser": "~1.18.2",
+        "cookie-parser": "~1.4.3",
+        "debug": "~2.6.9",
+        "express": "~4.15.5"
+    }
+}
