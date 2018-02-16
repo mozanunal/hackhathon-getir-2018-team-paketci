@@ -1,4 +1,39 @@
 {
-    
-
+    "couriers": [
+        {
+            "_id":"dsadqwdwqdwqdqwd",
+            "initLocation": {
+                "lat": 42.232,
+                "long": 23.32
+            },
+            "location": {
+                "lat": 42.232,
+                "long": 23.32
+            },
+            "loadCapacity": 20,
+            "remainingCapacity":20,
+            "route":{},
+            "packets": [
+                "packet1",
+                "packet2"
+            ]
+        }
+    ],
+    "packets": [
+        {
+            "_id":"dsadqwdwqdwqdqwd",
+            "initLocation": {
+                "lat": 42.232,
+                "long": 23.32
+            },
+            "destLocation": {
+                "lat": 42.232,
+                "long": 23.32
+            },
+            "weight": 20,
+            "state": 0,
+            "courier":{}
+        }
+    ],
+    "name": "Paketci APP"
 }

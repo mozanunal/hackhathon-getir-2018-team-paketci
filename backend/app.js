@@ -1,11 +1,26 @@
 var express = require('express');
-var router = express.Router();
+var app = express();
 
-router.get('/', function(req, res) {
-  res.send('Index page');
+var parsedJSON = require('./db.json');
+
+
+app.get('/', function (req, res) {
+    res.send('hello world');
 });
 
-router.use('/api/courier', require('./api/courier').router);
-router.use('/api/packet', require('./api/packet').router);
 
-module.exports.router = router;
+/*
+Courier api
+*/
+app.get('/api/courier', function (req, res) {
+    res.send(parsedJSON.couriers);
+});
+
+/*
+*/
+app.get('/api/packet', function (req, res) {
+    res.send(parsedJSON.packets);
+});
+
+
+app.listen(3000);
