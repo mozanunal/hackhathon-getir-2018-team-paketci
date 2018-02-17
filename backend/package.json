@@ -22,6 +22,10 @@
     "debug": "~2.6.9",
     "express": "~4.15.5",
     "mathjs": "^3.20.2",
-    "point-line-distance": "^1.0.0"
+    "point-line-distance": "^1.0.0",
+    "google_directions": "^0.6.0",
+    "mathjs": "^3.20.2",
+    "polyline": "^0.2.0",
+    "request": "^2.83.0"
   }
 }
