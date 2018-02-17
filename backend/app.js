@@ -3,8 +3,11 @@ var app = express();
 
 var parsedJSON = require('./db.json');
 var math = require('mathjs');
+var pld = require('point-line-distance');
 
-
+function randomRange(min, max) {
+    return ~~(Math.random() * (max - min + 1)) + min
+}
 /*
 Is it really working?
 */
@@ -53,6 +56,8 @@ app.get('/api/route/:id', function (req, res) {
 });
 
 
+var courierNumber = 3;
+var packetNumber = 5;
 
 /*
 To create random couriers and packets.
@@ -60,41 +65,37 @@ To calculate all routes avaliable.
 */
 app.get('/api/create', function (req, res) {
 
-    var courierNumber = 3;
-    var packetNumber = 5;
-
+    /* Courier Creator */
     for (var i = 0; i < courierNumber; i++) {
+        var loc = {
+            "lat": randomRange(42, 36),
+            "long": randomRange(19, 45)
+        };
         var courier = {
             "_id": i,
-            "initLocation": {
-                "lat": 5 * i + 10,
-                "long": 2 * i + 10
-            },
-            "curLocation": {
-                "lat": 5 * i + 10,
-                "long": 2 * i + 10
-            },
+            "initLocation": loc,
+            "curLocation": loc,
             "weightCapacity": 20,
             "remainingWeightCapacity": 20,
             "pieceCapacity": 3,
             "remainingPieceCapacity": 3,
-            "route": {},
-            "packets": [
-            ]
+            "routes": [],
+            "packets": []
         };
         parsedJSON.couriers.push(courier);
     }
 
+    /* Packet Creator */
     for (var i = 0; i < packetNumber; i++) {
         var packet = {
             "_id": i,
             "initLocation": {
-                "lat": 4 * i + 10,
-                "long": 3 * i + 10
+                "lat": randomRange(42, 36),
+                "long": randomRange(19, 45)
             },
             "destLocation": {
-                "lat": 25,
-                "long": 25
+                "lat": 39,
+                "long": 32
             },
             "weight": 20,
             "state": 0,
@@ -104,6 +105,21 @@ app.get('/api/create', function (req, res) {
     }
 
     var routeID = 0;
+    for (var i = 0; i < courierNumber; i++) {
+        var distanceBetweenPoints = math.distance([parsedJSON.couriers[i].initLocation.lat, parsedJSON.couriers[i].initLocation.long], [parsedJSON.packets[0].destLocation.lat, parsedJSON.packets[0].destLocation.long]);
+
+        var route = {
+            "_id": routeID,
+            "routeFromGoogle": "",
+            "distance": distanceBetweenPoints,
+            "startLoc": parsedJSON.couriers[i].initLocation,
+            "endLoc": parsedJSON.packets[0].destLocation,
+            "nearPacketsDistance": [],
+            "state": 0
+        };
+        parsedJSON.routes.push(route);
+        routeID++;
+    }
 
     for (var i = 0; i < courierNumber; i++) {
         for (var j = 0; j < packetNumber; j++) {
@@ -116,7 +132,9 @@ app.get('/api/create', function (req, res) {
                 "routeFromGoogle": "",
                 "distance": distanceBetweenPoints,
                 "startLoc": parsedJSON.couriers[i].initLocation,
-                "endLoc": parsedJSON.packets[j].initLocation
+                "endLoc": parsedJSON.packets[j].initLocation,
+                "nearPacketsDistance": [],
+                "state": 0
             };
             parsedJSON.routes.push(route);
             routeID++;
@@ -134,7 +152,9 @@ app.get('/api/create', function (req, res) {
                 "routeFromGoogle": "",
                 "distance": distanceBetweenPoints,
                 "startLoc": parsedJSON.packets[i].initLocation,
-                "endLoc": parsedJSON.packets[j].initLocation
+                "endLoc": parsedJSON.packets[j].initLocation,
+                "nearPacketsDistance": [],
+                "state": 0
             };
             parsedJSON.routes.push(route);
             routeID++;
@@ -143,21 +163,112 @@ app.get('/api/create', function (req, res) {
 
     for (var i = 0; i < packetNumber; i++) {
 
-            var distanceBetweenPoints = math.distance([parsedJSON.packets[i].initLocation.lat, parsedJSON.packets[i].initLocation.long], [parsedJSON.packets[i].destLocation.lat, parsedJSON.packets[i].destLocation.long]);
+        var distanceBetweenPoints = math.distance([parsedJSON.packets[i].initLocation.lat, parsedJSON.packets[i].initLocation.long], [parsedJSON.packets[i].destLocation.lat, parsedJSON.packets[i].destLocation.long]);
 
-            var route = {
-                "_id": routeID,
-                "routeFromGoogle": "",
-                "distance": distanceBetweenPoints,
-                "startLoc": parsedJSON.packets[i].initLocation,
-                "endLoc": parsedJSON.packets[i].destLocation
-            };
-            parsedJSON.routes.push(route);
-            routeID++;
+        var route = {
+            "_id": routeID,
+            "routeFromGoogle": "",
+            "distance": distanceBetweenPoints,
+            "startLoc": parsedJSON.packets[i].initLocation,
+            "endLoc": parsedJSON.packets[i].destLocation,
+            "nearPacketsDistance": [],
+            "state": 0
+        };
+        parsedJSON.routes.push(route);
+        routeID++;
     }
 
+    for (var i = 0; i < routeID; i++) {
+        for (var j = 0; j < packetNumber; j++) {
+            var point = [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long, 0];
+            var a = [parsedJSON.routes[i].startLoc.lat, parsedJSON.routes[i].startLoc.long, 0];
+            var b = [parsedJSON.routes[i].endLoc.lat, parsedJSON.routes[i].endLoc.long, 0];
+            var distanceToPacket = 0;
+            if ((a[0] != b[0]) || (a[1] != b[1])) {
+                distanceToPacket = pld(point, a, b);
+            }
+            //console.log("routeID= " + i + "  packetID= " + j);
+            //console.log(distanceToPacket);
+            //console.log(a);
+            //console.log(b);
+            parsedJSON.routes[i].nearPacketsDistance.push(distanceToPacket);
+        }
+    }
+    res.send(parsedJSON);
+});
+
+
+/*
+To create random couriers and packets.
+To calculate all routes avaliable.
+*/
+app.get('/api/routeOptimize', function (req, res) {
+
+    for (var i = 0; i < courierNumber; i++) {
+        parsedJSON.couriers[i].routes.push(parsedJSON.routes[i]);
+        parsedJSON.routes[i].state = 1;
+        //console.log("kurye= " + i);
+    }
+
+    for (var packetIndex = 0; packetIndex < packetNumber; packetIndex++) {
+        var maxPossibleDistance = 1000000;
+        var min = maxPossibleDistance;
+        var minIndexCourier = -1;
+        var minIndexRoute = -1;
+        var minIndexPacket = -1;
+
+        for (var i = 0; i < courierNumber; i++) {
+            for (var j = 0; j < parsedJSON.couriers[i].routes.length; j++) {
+                for (var k = 0; k < packetNumber; k++) {
+                    console.log("nearPacketsDistanceIndex = ", k, "routes = ", j, "couriers= ", i);
+                    console.log(parsedJSON.couriers[i].routes[j].nearPacketsDistance[k]);
+                    if ((parsedJSON.couriers[i].routes[j].nearPacketsDistance[k] < min) && (parsedJSON.couriers[i].routes[j].nearPacketsDistance[k] != -1)) {
+                        min = parsedJSON.couriers[i].routes[j].nearPacketsDistance[k];
+                        minIndexCourier = i;
+                        minIndexRoute = j;
+                        minIndexPacket = k;
+                    }
+                }
+
+            }
+        }
+        console.log("minIndexCourier= " + minIndexCourier + "  minIndexRoute= " + minIndexRoute + "  minIndexPacket= " + minIndexPacket);
+
+        var newRouteIndex1 = -1;
+        var newRouteIndex2 = -1;
+        var oldRouteID = parsedJSON.couriers[minIndexCourier].routes[minIndexRoute]._id;
+
+        for (var i = 0; i < parsedJSON.routes.length; i++) {
+            parsedJSON.routes[i].nearPacketsDistance[minIndexPacket] = -1;
+            if ((parsedJSON.routes[minIndexRoute].startLoc.lat == parsedJSON.routes[i].startLoc.lat) && (parsedJSON.routes[minIndexRoute].startLoc.long == parsedJSON.routes[i].startLoc.long)) {
+                for (var j = 0; j < parsedJSON.packets.length; j++) {
+                    if ((parsedJSON.routes[i].endLoc.lat == parsedJSON.packets[j].initLocation.lat)
+                        && (parsedJSON.routes[i].endLoc.long == parsedJSON.packets[j].initLocation.long)) {
+                        newRouteIndex1 = i;
+                    }
+                }
+            }
+            if (parsedJSON.routes[minIndexRoute].endLoc == parsedJSON.routes[i].endLoc) {
+                for (var j = 0; j < parsedJSON.packets.length; j++) {
+                    if (parsedJSON.routes[i].startLoc = parsedJSON.packets[j].initLocation) {
+                        newRouteIndex2 = i;
+                    }
+                }
+            }
+        }
+        parsedJSON.couriers[minIndexCourier].packets.push(parsedJSON.packets[minIndexPacket]);
+        parsedJSON.packets[minIndexPacket].state = 1;
+
+        parsedJSON.couriers[minIndexCourier].routes.splice(oldRouteID, 1, parsedJSON.routes[newRouteIndex1], parsedJSON.routes[newRouteIndex2]);
+        parsedJSON.routes[oldRouteID].state = 0;
+        parsedJSON.routes[newRouteIndex1].state = 1;
+        parsedJSON.routes[newRouteIndex2].state = 1;
+        console.log(parsedJSON.couriers[minIndexCourier].routes.length);
+    }
 
     res.send(parsedJSON);
+
+
 });
 
 app.listen(3000);
