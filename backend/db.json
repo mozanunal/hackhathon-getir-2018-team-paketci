@@ -1,15 +1,6 @@
 {
-    "couriers": [
-    ],
-    "packets": [
-    ],
-    "routes": [
-        {
-            "routeFromGoogle":"",
-            "distance":"",
-            "startLoc":"",
-            "endLoc":""
-        }
-    ],
+    "couriers": [],
+    "packets": [],
+    "routes": [],
     "name": "Paketci APP"
 }
