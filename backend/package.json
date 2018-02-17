@@ -21,6 +21,7 @@
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
     "express": "~4.15.5",
-    "mathjs": "^3.20.2"
+    "mathjs": "^3.20.2",
+    "polyline": "^0.2.0"
   }
 }
