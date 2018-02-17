@@ -64,7 +64,7 @@ app.get('/api/route/:id', function (req, res) {
 
 
 var courierNumber = 3;
-var packetNumber = 10;
+var packetNumber = 20;
 
 /*
 To create random couriers and packets.
@@ -84,8 +84,8 @@ app.get('/api/create', function (req, res) {
             "curLocation": loc,
             "weightCapacity": 20,
             "remainingWeightCapacity": 20,
-            "pieceCapacity": 5,
-            "remainingPieceCapacity": 5,
+            "pieceCapacity": 8,
+            "remainingPieceCapacity": 8,
             "routes": [],
             "packets": []
         };
@@ -104,7 +104,7 @@ app.get('/api/create', function (req, res) {
                 "lat": 39,
                 "long": 32
             },
-            "weight": randomRange(1, 5),
+            "weight": randomRange(1, 2),
             "state": 0,
             "courier": {}
         };
@@ -192,6 +192,7 @@ app.get('/api/create', function (req, res) {
     }
 
     /* Calculate distance between route and any packet location */
+    /*
     for (var i = 0; i < routeID; i++) {
         for (var j = 0; j < packetNumber; j++) {
             var point = [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long, 0];
@@ -207,7 +208,24 @@ app.get('/api/create', function (req, res) {
             //console.log(b);
             parsedJSON.routes[i].nearPacketsDistance.push(distanceToPacket);
         }
+    }*/
+    /* Calculate minimum distance delta between route and any new double routes with packet */
+    for (var i = 0; i < routeID; i++) {
+        for (var j = 0; j < packetNumber; j++) {
+            var point = [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long, 0];
+            var a = [parsedJSON.routes[i].startLoc.lat, parsedJSON.routes[i].startLoc.long, 0];
+            var b = [parsedJSON.routes[i].endLoc.lat, parsedJSON.routes[i].endLoc.long, 0];
+
+            var distance1 = math.distance([parsedJSON.routes[i].startLoc.lat, parsedJSON.routes[i].startLoc.long],[parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long]);
+            var distance2 = math.distance([parsedJSON.routes[i].endLoc.lat, parsedJSON.routes[i].endLoc.long],[parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long]);
+
+            var deltaDistance = - parsedJSON.routes[i].distance + distance1 + distance2;
+
+            parsedJSON.routes[i].nearPacketsDistance.push(deltaDistance);
+        }
     }
+
+
     res.send(parsedJSON);
 });
 
@@ -253,13 +271,15 @@ app.get('/api/routeOptimize', function (req, res) {
         var newRouteIndex1 = -1;
         var newRouteIndex2 = -1;
         //var oldRouteID = parsedJSON.couriers[minIndexCourier].routes[minIndexRoute]._id;
-        var oldLocalRouteID = minIndexLocalRoute;
-        var oldRouteID = parsedJSON.couriers[minIndexCourier].routes[minIndexLocalRoute]._id;
+
         //console.log("minIndexRoute= ", minIndexRoute);
         //console.log("oldRouteID= ", oldRouteID);
 
-        if (minIndexLocalRoute != -1) {
-
+        if (minIndexLocalRoute != -1 && minIndexCourier !=-1) {
+            var oldLocalRouteID = minIndexLocalRoute;
+            console.log("minIndexCourier= ", minIndexCourier);
+            console.log("minIndexLocalRoute= ", minIndexLocalRoute);
+            var oldRouteID = parsedJSON.couriers[minIndexCourier].routes[minIndexLocalRoute]._id;
             for (var i = 0; i < parsedJSON.routes.length; i++) {
                 parsedJSON.routes[i].nearPacketsDistance[minIndexPacket] = -1;
                 if ((parsedJSON.routes[oldRouteID].startLoc.lat == parsedJSON.routes[i].startLoc.lat)
