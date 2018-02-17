@@ -64,7 +64,7 @@ app.get('/api/route/:id', function (req, res) {
 
 
 var courierNumber = 3;
-var packetNumber = 5;
+var packetNumber = 10;
 
 /*
 To create random couriers and packets.
@@ -84,8 +84,8 @@ app.get('/api/create', function (req, res) {
             "curLocation": loc,
             "weightCapacity": 20,
             "remainingWeightCapacity": 20,
-            "pieceCapacity": 3,
-            "remainingPieceCapacity": 3,
+            "pieceCapacity": 5,
+            "remainingPieceCapacity": 5,
             "routes": [],
             "packets": []
         };
@@ -104,7 +104,7 @@ app.get('/api/create', function (req, res) {
                 "lat": 39,
                 "long": 32
             },
-            "weight": 20,
+            "weight": randomRange(1, 5),
             "state": 0,
             "courier": {}
         };
@@ -237,11 +237,13 @@ app.get('/api/routeOptimize', function (req, res) {
                     console.log("packetNumber = ", k, "routes = ", j, "couriers= ", i);
                     console.log("nearPacketsDistance= ", parsedJSON.couriers[i].routes[j].nearPacketsDistance[k]);
                     if ((parsedJSON.couriers[i].routes[j].nearPacketsDistance[k] < min) && (parsedJSON.couriers[i].routes[j].nearPacketsDistance[k] != -1)) {
-                        min = parsedJSON.couriers[i].routes[j].nearPacketsDistance[k];
-                        minIndexCourier = i;
-                        minIndexRoute = j;
-                        minIndexPacket = k;
-                        console.log("nearPacketsDistance= ", min, "  minIndexCourier= " + minIndexCourier + "  minIndexRoute= " + minIndexRoute + "  minIndexPacket= " + minIndexPacket);
+                        if ((parsedJSON.packets[k].weight < parsedJSON.couriers[i].remainingWeightCapacity) && (parsedJSON.couriers[i].remainingPieceCapacity > 0)) {
+                            min = parsedJSON.couriers[i].routes[j].nearPacketsDistance[k];
+                            minIndexCourier = i;
+                            minIndexRoute = j;
+                            minIndexPacket = k;
+                            console.log("nearPacketsDistance= ", min, "  minIndexCourier= " + minIndexCourier + "  minIndexRoute= " + minIndexRoute + "  minIndexPacket= " + minIndexPacket);
+                        }
                     }
                 }
             }
@@ -252,42 +254,68 @@ app.get('/api/routeOptimize', function (req, res) {
         var newRouteIndex2 = -1;
         //var oldRouteID = parsedJSON.couriers[minIndexCourier].routes[minIndexRoute]._id;
         var oldRouteID = minIndexRoute;
+        console.log("minIndexRoute= ", minIndexRoute);
         console.log("oldRouteID= ", oldRouteID);
 
-        for (var i = 0; i < parsedJSON.routes.length; i++) {
-            parsedJSON.routes[i].nearPacketsDistance[minIndexPacket] = -1;
-            if ((parsedJSON.routes[minIndexRoute].startLoc.lat == parsedJSON.routes[i].startLoc.lat) && (parsedJSON.routes[minIndexRoute].startLoc.long == parsedJSON.routes[i].startLoc.long)) {
-                if ((parsedJSON.routes[i].endLoc.lat == parsedJSON.packets[minIndexPacket].initLocation.lat)
-                    && (parsedJSON.routes[i].endLoc.long == parsedJSON.packets[minIndexPacket].initLocation.long)) {
-                    newRouteIndex1 = i;
+        if (minIndexRoute != -1) {
+
+            for (var i = 0; i < parsedJSON.routes.length; i++) {
+                parsedJSON.routes[i].nearPacketsDistance[minIndexPacket] = -1;
+                if ((parsedJSON.routes[minIndexRoute].startLoc.lat == parsedJSON.routes[i].startLoc.lat) && (parsedJSON.routes[minIndexRoute].startLoc.long == parsedJSON.routes[i].startLoc.long)) {
+                    if ((parsedJSON.routes[i].endLoc.lat == parsedJSON.packets[minIndexPacket].initLocation.lat)
+                        && (parsedJSON.routes[i].endLoc.long == parsedJSON.packets[minIndexPacket].initLocation.long)) {
+                        newRouteIndex1 = i;
+                    }
+                }
+                if ((parsedJSON.routes[minIndexRoute].endLoc.lat == parsedJSON.routes[i].endLoc.lat) && (parsedJSON.routes[minIndexRoute].endLoc.lat == parsedJSON.routes[i].endLoc.lat)) {
+                    if ((parsedJSON.routes[i].startLoc.lat == parsedJSON.packets[minIndexPacket].initLocation.lat) && (parsedJSON.routes[minIndexRoute].endLoc.lat == parsedJSON.routes[i].endLoc.lat)) {
+                        newRouteIndex2 = i;
+                    }
                 }
             }
-            if ((parsedJSON.routes[minIndexRoute].endLoc.lat == parsedJSON.routes[i].endLoc.lat) && (parsedJSON.routes[minIndexRoute].endLoc.lat == parsedJSON.routes[i].endLoc.lat)) {
-                if ((parsedJSON.routes[i].startLoc.lat == parsedJSON.packets[minIndexPacket].initLocation.lat) && (parsedJSON.routes[minIndexRoute].endLoc.lat == parsedJSON.routes[i].endLoc.lat)) {
-                    newRouteIndex2 = i;
+            parsedJSON.couriers[minIndexCourier].packets.push(parsedJSON.packets[minIndexPacket]);
+            parsedJSON.packets[minIndexPacket].state = 1;
+
+            for (var i = 0; i < parsedJSON.couriers[minIndexCourier].routes.length; i++) {
+                if (parsedJSON.couriers[minIndexCourier].routes[i]._id == oldRouteID) {
+                    var localOldRouteID = i;
                 }
             }
+
+
+            console.log("oldRouteID= ", oldRouteID);
+            console.log("newRouteIndex1= ", newRouteIndex1);
+            console.log("newRouteIndex2= ", newRouteIndex2);
+
+            parsedJSON.couriers[minIndexCourier].remainingPieceCapacity = parsedJSON.couriers[minIndexCourier].remainingPieceCapacity - 1;
+            parsedJSON.couriers[minIndexCourier].remainingWeightCapacity = parsedJSON.couriers[minIndexCourier].remainingWeightCapacity - parsedJSON.packets[minIndexPacket].weight;
+
+            parsedJSON.routes[oldRouteID].state = 0;
+            parsedJSON.routes[newRouteIndex1].state = 1;
+            parsedJSON.routes[newRouteIndex2].state = 1;
+            parsedJSON.couriers[minIndexCourier].routes.splice(localOldRouteID, 1, parsedJSON.routes[newRouteIndex1], parsedJSON.routes[newRouteIndex2]);
+            //console.log(parsedJSON.couriers[minIndexCourier].routes.length);
         }
-        parsedJSON.couriers[minIndexCourier].packets.push(parsedJSON.packets[minIndexPacket]);
-        parsedJSON.packets[minIndexPacket].state = 1;
-
-        for (var i = 0; i < parsedJSON.couriers[minIndexCourier].routes.length; i++) {
-            if (parsedJSON.couriers[minIndexCourier].routes[i]._id == oldRouteID) {
-                var localOldRouteID = i;
-            }
+        else {
+            console.log("cozum kalmadi");
         }
-
-
-        console.log("oldRouteID= ", oldRouteID);
-        console.log("newRouteIndex1= ", newRouteIndex1);
-        console.log("newRouteIndex2= ", newRouteIndex2);
-        parsedJSON.routes[oldRouteID].state = 0;
-        parsedJSON.routes[newRouteIndex1].state = 1;
-        parsedJSON.routes[newRouteIndex2].state = 1;
-        parsedJSON.couriers[minIndexCourier].routes.splice(localOldRouteID, 1, parsedJSON.routes[newRouteIndex1], parsedJSON.routes[newRouteIndex2]);
-        //console.log(parsedJSON.couriers[minIndexCourier].routes.length);
     }
+    var totalDistance = 0;
+    for (var i = 0; i < courierNumber; i++) {
+        if(parsedJSON.couriers[i].routes.length == 1 )
+        {
+            parsedJSON.couriers[i].routes[0].distance = 0;
+            console.log("Courier No:", i, " is free today");
 
+        }else{
+            for (var j = 0; j < parsedJSON.couriers[i].routes.length; j++) {
+                totalDistance = totalDistance + parsedJSON.couriers[i].routes[j].distance;
+            }
+
+        }
+    }
+    
+    console.log("totalDistance= ", totalDistance);
     res.send(parsedJSON);
 
 
