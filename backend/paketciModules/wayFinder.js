@@ -5,7 +5,7 @@ var url="";
 
 
 
-var destinationPoints = (originString, destinationString, keyString) => {
+var destinationPoints = (originString, destinationString, keyString, callback) => {
     var params = {
         // REQUIRED 
         origin: originString,
@@ -22,13 +22,19 @@ var destinationPoints = (originString, destinationString, keyString) => {
             return 1;
         }
     
-        //console.log(polylineParser.decode(JSON.parse(body).routes[0].overview_polyline.points));
-        return polylineParser.decode(JSON.parse(body).routes[0].overview_polyline.points);
-    
+      //  console.log(polylineParser.decode(JSON.parse(body).routes[0].overview_polyline.points));
+        
+        var a = polylineParser.decode(JSON.parse(body).routes[0].overview_polyline.points);
+        {
+            callback(a); 
+        }
+       
+       
         
         
       });
 
-}
+      
 
+}
 module.exports.FindWay = destinationPoints;
