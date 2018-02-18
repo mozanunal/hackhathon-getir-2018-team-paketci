@@ -23,18 +23,42 @@ var destinationPoints = (originString, destinationString, keyString, callback) =
         }
     
       //  console.log(polylineParser.decode(JSON.parse(body).routes[0].overview_polyline.points));
-        
-        var a = polylineParser.decode(JSON.parse(body).routes[0].overview_polyline.points);
-        {
-            callback(a); 
+       // var wayPoints = [];
+       var wayPoints = [];
+        //console.log(body);
+        var legsArray = JSON.parse(body).routes[0].legs;
+      
+        //var a = polylineParser.decode(JSON.parse(body).routes[0].overview_polyline.points);
+
+        legsArray.map(leg=>{
+            var stepsArray = leg.steps;
+            stepsArray.map(step=> {
+               // wayPoints.concat(step.polyline.points);
+               //wayPoints += step.polyline.points;
+                 //wayPoints = wayPoints.concat(polylineParser.decode(step.polyline.points));
+              // console.log(polylineParser.decode(step.polyline.points));
+            });
+        });
+        for(i=0;i<legsArray.length; i++) {
+            for(j=0;j<legsArray[i].steps.length;j++) {
+                //wayPoints = wayPoints.concat(legsArray[i].steps[j].polyline.points);
+                wayPoints = wayPoints.concat(polylineParser.decode(legsArray[i].steps[j].polyline.points));
+               // console.log(polylineParser.decode(legsArray[i].steps[j].polyline.points));
+            }
         }
-       
+        console.log(polylineParser.decode("}kpaGf{upLA?QHSJQJURMJQNMLKLIHIJIJGHCDMZIR[v@"));
+        
+        callback(wayPoints);
+        //console.log(wayPoints);
+        //console.log(polylineParser.decode("espaGncvpLUSECAAEEEICCCEIMCIEI[{@Ys@M[_@_Ac@mAk@yAUk@GQEM"));
+
+        
        
         
         
       });
 
-      
-
 }
+destinationPoints("40.7143528,-74.0059731","40.5143528,-74.2059731","akey",()=>{});
+
 module.exports.FindWay = destinationPoints;

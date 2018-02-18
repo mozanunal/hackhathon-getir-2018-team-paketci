@@ -1,5 +1,5 @@
 var finder = require("./wayFinder");
+var parser = require("./polylineParser");
 
-finder.FindWay("40.7143528, -74.0059731","40.5143528, -74.2059731","akey",(points) => {
-    console.log(points);
-});
+
+console.log(parser.decode("}kpaGf{upLA?QHSJQJURMJQNMLKLIHIJIJGHCDMZIR[v@"));
