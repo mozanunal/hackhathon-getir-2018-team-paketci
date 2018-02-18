@@ -155,7 +155,7 @@ function courierCreator(couriersArray, weightCapacity, pieceCapacity) {
         "weightCapacity": weightCapacity,
         "remainingWeightCapacity": weightCapacity,
         "pieceCapacity": pieceCapacity,
-        "remainingPieceCapacity": weightCapacity,
+        "remainingPieceCapacity": pieceCapacity,
         "routes": [],
         "packets": []
     };
