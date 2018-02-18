@@ -58,14 +58,23 @@ app.get('/api/route/:id', function (req, res) {
     res.send(parsedJSON.routes[req.params.id]);
 });
 
-var courierNumber = 3; 
+var courierNumber = 4; 
 var packetNumber = 20;
 
 /*
+Create api
 To create random couriers and packets.
 To calculate all routes avaliable.
 */
 app.get('/api/create', function (req, res) {
+
+    /* Database reset */
+    parsedJSON = {
+        "couriers": [],
+        "packets": [],
+        "routes": [],
+        "name": "Paketci APP"
+    };
 
     /* Courier Creator */
     var weightCapacityPerCourier = 20;
@@ -90,6 +99,7 @@ app.get('/api/create', function (req, res) {
 
 
 /*
+routeOptimize api
 To create random couriers and packets.
 To calculate all routes avaliable.
 */
@@ -118,6 +128,21 @@ app.get('/api/routeOptimize', function (req, res) {
 
 
 });
+
+/**
+ * To reset db to random test generate
+ * 
+ * @param {dbjson file} dbJson (global db json file)
+ */
+function dbReset(dbJson) {
+    dbJson = {
+        "couriers": [],
+        "packets": [],
+        "routes": [],
+        "name": "Paketci APP"
+    };
+}
+
 
 /**
  * To create multiple courier with common weightCapacity and pieceCapacity
@@ -155,7 +180,7 @@ function courierCreator(couriersArray, weightCapacity, pieceCapacity) {
         "weightCapacity": weightCapacity,
         "remainingWeightCapacity": weightCapacity,
         "pieceCapacity": pieceCapacity,
-        "remainingPieceCapacity": weightCapacity,
+        "remainingPieceCapacity": pieceCapacity,
         "routes": [],
         "packets": []
     };
