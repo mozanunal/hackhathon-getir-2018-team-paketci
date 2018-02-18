@@ -1,0 +1,184 @@
+<timeline>
+
+BACKEND
+<backEndContainer>
+
+Data structure and Crud Outputs
+Sample JSON files, it can be enchance according to packet number and courier number
+/api/courier
+[
+  {
+    "_id": 0,
+    "initLocation": {
+      "lat": 40.73726833204571,
+      "long": -111.86816435821093
+    },
+    "curLocation": {
+      "lat": 40.73726833204571,
+      "long": -111.86816435821093
+    },
+    "weightCapacity": 20,
+    "remainingWeightCapacity": 18.2923904630732,
+    "pieceCapacity": 8,
+    "remainingPieceCapacity": 7,
+    "routes": [
+      {
+        "_id": 1,
+        "routeFromGoogle": "",
+        "distance": 0.02248501759660298,
+        "startLoc": {
+          "lat": 40.73726833204571,
+          "long": -111.86816435821093
+        },
+        "endLoc": {
+          "lat": 40.73287234594392,
+          "long": -111.84611325115227
+        },
+        "nearPacketsDistance": [
+          -1
+        ],
+        "state": 1
+      },
+      {
+        "_id": 3,
+        "routeFromGoogle": "",
+        "distance": 0.01372524844602735,
+        "startLoc": {
+          "lat": 40.73287234594392,
+          "long": -111.84611325115227
+        },
+        "endLoc": {
+          "lat": 40.745843583374935,
+          "long": -111.84162666621344
+        },
+        "nearPacketsDistance": [
+          -1
+        ],
+        "state": 1
+      }
+    ],
+    "packets": [
+      {
+        "_id": 0,
+        "initLocation": {
+          "lat": 40.73287234594392,
+          "long": -111.84611325115227
+        },
+        "destLocation": {
+          "lat": 40.745843583374935,
+          "long": -111.84162666621344
+        },
+        "weight": 1.707609536926801,
+        "state": 1,
+        "courier": {}
+      }
+    ]
+  }
+]
+
+/api/packet
+[
+  {
+    "_id": 0,
+    "initLocation": {
+      "lat": 40.73287234594392,
+      "long": -111.84611325115227
+    },
+    "destLocation": {
+      "lat": 40.745843583374935,
+      "long": -111.84162666621344
+    },
+    "weight": 1.707609536926801,
+    "state": 1,
+    "courier": {}
+  }
+]
+
+/api/route
+[
+  {
+    "_id": 0,
+    "routeFromGoogle": "",
+    "distance": 0.027888779677731172,
+    "startLoc": {
+      "lat": 40.73726833204571,
+      "long": -111.86816435821093
+    },
+    "endLoc": {
+      "lat": 40.745843583374935,
+      "long": -111.84162666621344
+    },
+    "nearPacketsDistance": [
+      -1
+    ],
+    "state": 0
+  },
+  {
+    "_id": 1,
+    "routeFromGoogle": "",
+    "distance": 0.02248501759660298,
+    "startLoc": {
+      "lat": 40.73726833204571,
+      "long": -111.86816435821093
+    },
+    "endLoc": {
+      "lat": 40.73287234594392,
+      "long": -111.84611325115227
+    },
+    "nearPacketsDistance": [
+      -1
+    ],
+    "state": 1
+  },
+  {
+    "_id": 2,
+    "routeFromGoogle": "",
+    "distance": 0,
+    "startLoc": {
+      "lat": 40.73287234594392,
+      "long": -111.84611325115227
+    },
+    "endLoc": {
+      "lat": 40.73287234594392,
+      "long": -111.84611325115227
+    },
+    "nearPacketsDistance": [
+      -1
+    ],
+    "state": 0
+  },
+  {
+    "_id": 3,
+    "routeFromGoogle": "",
+    "distance": 0.01372524844602735,
+    "startLoc": {
+      "lat": 40.73287234594392,
+      "long": -111.84611325115227
+    },
+    "endLoc": {
+      "lat": 40.745843583374935,
+      "long": -111.84162666621344
+    },
+    "nearPacketsDistance": [
+      -1
+    ],
+    "state": 1
+  }
+]
+
+Route Optimization
+<routeOptimizeAlgrotihmVisualize>
+Firstly, every courier has a route to common destination point. Then most efficient package route change apply. It's calculated with change of route distance according to package location. It will iterate until no package will left. But according to courier capacities, some of package can be over couriers' capacities; so you need to go second round.
+
+"dependencies": {
+    "body-parser": "~1.18.2",
+    "cookie-parser": "~1.4.3",
+    "debug": "~2.6.9",
+    "express": "~4.15.5",
+    "mathjs": "^3.20.2",
+    "point-line-distance": "^1.0.0",
+    "google_directions": "^0.6.0",
+    "polyline": "^0.2.0",
+    "request": "^2.83.0"
+  }
+

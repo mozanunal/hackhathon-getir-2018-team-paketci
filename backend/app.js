@@ -58,8 +58,8 @@ app.get('/api/route/:id', function (req, res) {
     res.send(parsedJSON.routes[req.params.id]);
 });
 
-var courierNumber = 4; 
-var packetNumber = 20;
+var courierNumber = 1; 
+var packetNumber = 1;
 
 var map={
     "minLat": 40.726,
