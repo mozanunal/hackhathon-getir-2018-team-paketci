@@ -61,6 +61,13 @@ app.get('/api/route/:id', function (req, res) {
 var courierNumber = 3; 
 var packetNumber = 20;
 
+var map={
+    "minLat": 51.52,
+    "maxLat": 51.57,
+    "minLong": -0.3145 ,
+    "maxLong": -0.1358
+}
+
 /*
 To create random couriers and packets.
 To calculate all routes avaliable.
@@ -74,8 +81,8 @@ app.get('/api/create', function (req, res) {
 
     /* Packet Creator */
     var destLocation = {
-        "lat": randomRange(39, 40),
-        "long": randomRange(31, 32)
+        "lat": randomRange(map.minLat, map.maxLat),
+        "long": randomRange(map.minLong, map.maxLong)
     }
     randomMultiPacketCreator(parsedJSON.packets, packetNumber, destLocation);
 
@@ -145,8 +152,8 @@ function randomMultiCourierCreator(couriersArray, couriersCount, weightCapacity,
  */
 function courierCreator(couriersArray, weightCapacity, pieceCapacity) {
     var loc = {
-        "lat": randomRange(39, 40),
-        "long": randomRange(31, 32)
+        "lat": randomRange(map.minLat, map.maxLat),
+        "long": randomRange(map.minLong, map.maxLong)
     };
     var courier = {
         "_id": couriersArray.length,
@@ -187,8 +194,8 @@ function packetCreator(packetsArray, destLocation, packetWeight) {
     var packet = {
         "_id": packetsArray.length,
         "initLocation": {
-            "lat": randomRange(39, 40),
-            "long": randomRange(31, 32)
+            "lat": randomRange(map.minLat, map.maxLat),
+            "long": randomRange(map.minLong, map.maxLong)
         },
         "destLocation": destLocation,
         "weight": randomRange(1, 2),
