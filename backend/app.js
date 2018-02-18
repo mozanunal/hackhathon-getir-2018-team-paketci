@@ -66,10 +66,10 @@ var courierNumber = 10;
 var packetNumber = 50;
 
 var map={
-    "minLat": 51.52,
-    "maxLat": 51.57,
-    "minLong": -0.3145 ,
-    "maxLong": -0.1358
+    "minLat": 40.726,
+    "maxLat": 40.76,
+    "minLong": -111.917 ,
+    "maxLong": -111.83
 }
 
 app.post('/api/create', function (req, res) {
