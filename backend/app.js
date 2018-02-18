@@ -2,10 +2,8 @@ var express = require('express');
 var parsedJSON = require('./db.json');
 var math = require('mathjs');
 var pld = require('point-line-distance');
-var bodyParser  = require('body-parser');
 
 var app = express();
-app.use(bodyParser.json());
 
 app.all('/*', function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -62,22 +60,61 @@ app.get('/api/route/:id', function (req, res) {
     res.send(parsedJSON.routes[req.params.id]);
 });
 
-var courierNumber = 10; 
-var packetNumber = 50;
+var courierNumber = 3;
+var packetNumber = 10;
 
-var map={
+var map = {
     "minLat": 40.726,
     "maxLat": 40.76,
-    "minLong": -111.917 ,
+    "minLong": -111.917,
     "maxLong": -111.83
 }
 
-app.post('/api/create', function (req, res) {
-    console.log(req.body);
-    if(req!=null) {
-        res.set(req.body);
+app.get('/api/create/:courierNumberCloud/:packetNumberCloud/:weightCapacityCloud/:pieceCapacityCloud', function (req, res) {
+    var weightCapacityPerCourier = 20;
+    var pieceCapacityPerCourier = 8;
+    courierNumber = 3;
+    packetNumber = 10;
+
+    try {
+        weightCapacityPerCourier = req.params.weightCapacityCloud;
+        pieceCapacityPerCourier = req.params.pieceCapacityCloud;
+        courierNumber = req.params.courierNumberCloud;
+        packetNumber = req.params.packetNumberCloud;
     }
+    catch (error) {
+        console.log(error);
+    }
+
+
+    /* Database reset */
+    parsedJSON = {
+        "couriers": [],
+        "packets": [],
+        "routes": [],
+        "name": "Paketci APP"
+    };
+
+    /* Courier Creator */
+    randomMultiCourierCreator(parsedJSON.couriers, courierNumber, weightCapacityPerCourier, pieceCapacityPerCourier);
+
+    /* Packet Creator */
+    var destLocation = {
+        "lat": randomRange(map.minLat, map.maxLat),
+        "long": randomRange(map.minLong, map.maxLong)
+    }
+    randomMultiPacketCreator(parsedJSON.packets, packetNumber, destLocation);
+
+    /* Route Creator */
+    routeCreatorAll(parsedJSON, destLocation);
+
+    /* Calculate minimum distance delta between route and any new double routes with packet */
+    calculateAddingRouteValue(parsedJSON);
+
+    res.send(parsedJSON);
+
 });
+
 /*
 Create api
 To create random couriers and packets.
