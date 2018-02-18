@@ -1,15 +1,19 @@
 var express = require('express');
-var app = express();
 var parsedJSON = require('./db.json');
 var math = require('mathjs');
 var pld = require('point-line-distance');
+var bodyParser  = require('body-parser');
 
+var app = express();
+app.use(bodyParser.json());
 
 app.all('/*', function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
     next();
 });
+
+
 
 /*
 Is it really working?
@@ -58,8 +62,8 @@ app.get('/api/route/:id', function (req, res) {
     res.send(parsedJSON.routes[req.params.id]);
 });
 
-var courierNumber = 4; 
-var packetNumber = 20;
+var courierNumber = 10; 
+var packetNumber = 50;
 
 var map={
     "minLat": 51.52,
@@ -68,13 +72,18 @@ var map={
     "maxLong": -0.1358
 }
 
+app.post('/api/create', function (req, res) {
+    console.log(req.body);
+    if(req!=null) {
+        res.set(req.body);
+    }
+});
 /*
 Create api
 To create random couriers and packets.
 To calculate all routes avaliable.
 */
 app.get('/api/create', function (req, res) {
-
     /* Database reset */
     parsedJSON = {
         "couriers": [],
@@ -223,7 +232,7 @@ function packetCreator(packetsArray, destLocation, packetWeight) {
             "long": randomRange(map.minLong, map.maxLong)
         },
         "destLocation": destLocation,
-        "weight": randomRange(1, 2),
+        "weight": randomRange(1, 3),
         "state": 0,
         "courier": {}
     };
