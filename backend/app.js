@@ -1,13 +1,9 @@
 var express = require('express');
 var app = express();
-
 var parsedJSON = require('./db.json');
 var math = require('mathjs');
 var pld = require('point-line-distance');
 
-function randomRange(min, max) {
-    return (min + (max - min) * Math.random());
-}
 
 app.all('/*', function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -62,8 +58,7 @@ app.get('/api/route/:id', function (req, res) {
     res.send(parsedJSON.routes[req.params.id]);
 });
 
-
-var courierNumber = 3;
+var courierNumber = 3; 
 var packetNumber = 20;
 
 /*
@@ -73,159 +68,22 @@ To calculate all routes avaliable.
 app.get('/api/create', function (req, res) {
 
     /* Courier Creator */
-    for (var i = 0; i < courierNumber; i++) {
-        var loc = {
-            "lat": randomRange(39, 40),
-            "long": randomRange(31, 32)
-        };30
-        var courier = {
-            "_id": i,
-            "initLocation": loc,
-            "curLocation": loc,
-            "weightCapacity": 20,
-            "remainingWeightCapacity": 20,
-            "pieceCapacity": 8,
-            "remainingPieceCapacity": 8,
-            "routes": [],
-            "packets": []
-        };
-        parsedJSON.couriers.push(courier);
-    }
+    var weightCapacityPerCourier = 20;
+    var pieceCapacityPerCourier = 8;
+    randomMultiCourierCreator(parsedJSON.couriers, courierNumber, weightCapacityPerCourier, pieceCapacityPerCourier);
 
+    /* Packet Creator */
     var destLocation = {
         "lat": randomRange(39, 40),
         "long": randomRange(31, 32)
     }
-    /* Packet Creator */
-    for (var i = 0; i < packetNumber; i++) {
-        var packet = {
-            "_id": i,
-            "initLocation": {
-                "lat": randomRange(39, 40),
-                "long": randomRange(31, 32)
-            },
-            "destLocation": destLocation,
-            "weight": randomRange(1, 2),
-            "state": 0,
-            "courier": {}
-        };
-        parsedJSON.packets.push(packet);
-    }
+    randomMultiPacketCreator(parsedJSON.packets, packetNumber, destLocation);
 
     /* Route Creator */
+    routeCreatorAll(parsedJSON, destLocation);
 
-    /* Courier starting location to delivery location*/
-    var routeID = 0;
-    for (var i = 0; i < courierNumber; i++) {
-        var distanceBetweenPoints = math.distance([parsedJSON.couriers[i].initLocation.lat, parsedJSON.couriers[i].initLocation.long], [parsedJSON.packets[0].destLocation.lat, parsedJSON.packets[0].destLocation.long]);
-
-        var route = {
-            "_id": routeID,
-            "routeFromGoogle": "",
-            "distance": distanceBetweenPoints,
-            "startLoc": parsedJSON.couriers[i].initLocation,
-            "endLoc": parsedJSON.packets[0].destLocation,
-            "nearPacketsDistance": [],
-            "state": 0
-        };
-        parsedJSON.routes.push(route);
-        routeID++;
-    }
-
-    /* Courier starting location to packet location*/
-    for (var i = 0; i < courierNumber; i++) {
-        for (var j = 0; j < packetNumber; j++) {
-            //var x = parsedJSON.couriers[courierNumber].initLocation.lat;
-
-            var distanceBetweenPoints = math.distance([parsedJSON.couriers[i].initLocation.lat, parsedJSON.couriers[i].initLocation.long], [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long]);
-
-            var route = {
-                "_id": routeID,
-                "routeFromGoogle": "",
-                "distance": distanceBetweenPoints,
-                "startLoc": parsedJSON.couriers[i].initLocation,
-                "endLoc": parsedJSON.packets[j].initLocation,
-                "nearPacketsDistance": [],
-                "state": 0
-            };
-            parsedJSON.routes.push(route);
-            routeID++;
-        }
-    }
-
-    /* Packet location to packet location*/
-    for (var i = 0; i < packetNumber; i++) {
-        for (var j = 0; j < packetNumber; j++) {
-            //var x = parsedJSON.couriers[courierNumber].initLocation.lat;
-
-            var distanceBetweenPoints = math.distance([parsedJSON.packets[i].initLocation.lat, parsedJSON.packets[i].initLocation.long], [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long]);
-
-            var route = {
-                "_id": routeID,
-                "routeFromGoogle": "",
-                "distance": distanceBetweenPoints,
-                "startLoc": parsedJSON.packets[i].initLocation,
-                "endLoc": parsedJSON.packets[j].initLocation,
-                "nearPacketsDistance": [],
-                "state": 0
-            };
-            parsedJSON.routes.push(route);
-            routeID++;
-        }
-    }
-
-    /* Packet location to delivery location*/
-    for (var i = 0; i < packetNumber; i++) {
-
-        var distanceBetweenPoints = math.distance([parsedJSON.packets[i].initLocation.lat, parsedJSON.packets[i].initLocation.long], [parsedJSON.packets[i].destLocation.lat, parsedJSON.packets[i].destLocation.long]);
-
-        var route = {
-            "_id": routeID,
-            "routeFromGoogle": "",
-            "distance": distanceBetweenPoints,
-            "startLoc": parsedJSON.packets[i].initLocation,
-            "endLoc": parsedJSON.packets[i].destLocation,
-            "nearPacketsDistance": [],
-            "state": 0
-        };
-        parsedJSON.routes.push(route);
-        routeID++;
-    }
-
-    /* Calculate distance between route and any packet location */
-    /*
-    for (var i = 0; i < routeID; i++) {
-        for (var j = 0; j < packetNumber; j++) {
-            var point = [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long, 0];
-            var a = [parsedJSON.routes[i].startLoc.lat, parsedJSON.routes[i].startLoc.long, 0];
-            var b = [parsedJSON.routes[i].endLoc.lat, parsedJSON.routes[i].endLoc.long, 0];
-            var distanceToPacket = 0;
-            if ((a[0] != b[0]) || (a[1] != b[1])) {
-                distanceToPacket = pld(point, a, b);
-            }
-            //console.log("routeID= " + i + "  packetID= " + j);
-            //console.log(distanceToPacket);
-            //console.log(a);
-            //console.log(b);
-            parsedJSON.routes[i].nearPacketsDistance.push(distanceToPacket);
-        }
-    }*/
     /* Calculate minimum distance delta between route and any new double routes with packet */
-    for (var i = 0; i < routeID; i++) {
-        for (var j = 0; j < packetNumber; j++) {
-            var point = [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long, 0];
-            var a = [parsedJSON.routes[i].startLoc.lat, parsedJSON.routes[i].startLoc.long, 0];
-            var b = [parsedJSON.routes[i].endLoc.lat, parsedJSON.routes[i].endLoc.long, 0];
-
-            var distance1 = math.distance([parsedJSON.routes[i].startLoc.lat, parsedJSON.routes[i].startLoc.long], [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long]);
-            var distance2 = math.distance([parsedJSON.routes[i].endLoc.lat, parsedJSON.routes[i].endLoc.long], [parsedJSON.packets[j].initLocation.lat, parsedJSON.packets[j].initLocation.long]);
-
-            var deltaDistance = - parsedJSON.routes[i].distance + distance1 + distance2;
-
-            parsedJSON.routes[i].nearPacketsDistance.push(deltaDistance);
-        }
-    }
-
+    calculateAddingRouteValue(parsedJSON);
 
     res.send(parsedJSON);
 });
@@ -237,123 +95,380 @@ To calculate all routes avaliable.
 */
 app.get('/api/routeOptimize', function (req, res) {
 
-    for (var i = 0; i < courierNumber; i++) {
-        parsedJSON.couriers[i].routes.push(parsedJSON.routes[i]);
-        parsedJSON.routes[i].state = 1;
-        //console.log("kurye= " + i);
-    }
+    firstRouteAssign(parsedJSON);
 
+    /* repeat optimize process for all package */
     for (var packetCounter = 0; packetCounter < packetNumber; packetCounter++) {
+        /* Add the most optimize action for taking a package */
         var maxPossibleDistance = 1000000;
-        var min = maxPossibleDistance;
-        var minIndexCourier = -1;
-        var minIndexRoute = -1;
-        var minIndexPacket = -1;
-
-        for (var i = 0; i < courierNumber; i++) {
-            for (var j = 0; j < parsedJSON.couriers[i].routes.length; j++) {
-                for (var k = 0; k < packetNumber; k++) {
-                    //console.log("packetNumber = ", k, "routes = ", j, "couriers= ", i);
-                    //console.log("nearPacketsDistance= ", parsedJSON.couriers[i].routes[j].nearPacketsDistance[k]);
-                    if ((parsedJSON.couriers[i].routes[j].nearPacketsDistance[k] < min) && (parsedJSON.couriers[i].routes[j].nearPacketsDistance[k] != -1)) {
-                        if ((parsedJSON.packets[k].weight < parsedJSON.couriers[i].remainingWeightCapacity) && (parsedJSON.couriers[i].remainingPieceCapacity > 0)) {
-                            min = parsedJSON.couriers[i].routes[j].nearPacketsDistance[k];
-                            minIndexCourier = i;
-                            minIndexLocalRoute = j;
-                            minIndexPacket = k;
-                            // console.log("nearPacketsDistance= ", min, "  minIndexCourier= " + minIndexCourier + "  minIndexRoute= " + minIndexRoute + "  minIndexPacket= " + minIndexPacket);
-                        }
-                    }
-                }
-            }
+        var minRoute = {
+            "min": maxPossibleDistance,
+            "minIndexCourier": -1,
+            "minIndexLocalRoute": -1,
+            "minIndexPacket": -1,
         }
-        //console.log("=====================", "  nearPacketsDistance= ", min, "  minIndexCourier= " + minIndexCourier + "  minIndexRoute= " + minIndexRoute + "  minIndexPacket= " + minIndexPacket);
-
-        var newRouteIndex1 = -1;
-        var newRouteIndex2 = -1;
-        //var oldRouteID = parsedJSON.couriers[minIndexCourier].routes[minIndexRoute]._id;
-
-        //console.log("minIndexRoute= ", minIndexRoute);
-        //console.log("oldRouteID= ", oldRouteID);
-
-        if (minIndexLocalRoute != -1 && minIndexCourier != -1) {
-            var oldLocalRouteID = minIndexLocalRoute;
-            console.log("minIndexCourier= ", minIndexCourier);
-            console.log("minIndexLocalRoute= ", minIndexLocalRoute);
-            var oldRouteID = parsedJSON.couriers[minIndexCourier].routes[minIndexLocalRoute]._id;
-            for (var i = 0; i < parsedJSON.routes.length; i++) {
-                parsedJSON.routes[i].nearPacketsDistance[minIndexPacket] = -1;
-                if ((parsedJSON.routes[oldRouteID].startLoc.lat == parsedJSON.routes[i].startLoc.lat)
-                    && (parsedJSON.routes[oldRouteID].startLoc.long == parsedJSON.routes[i].startLoc.long)) {
-                    if ((parsedJSON.routes[i].endLoc.lat == parsedJSON.packets[minIndexPacket].initLocation.lat)
-                        && (parsedJSON.routes[i].endLoc.long == parsedJSON.packets[minIndexPacket].initLocation.long)) {
-                        newRouteIndex1 = i;
-                    }
-                }
-                if ((parsedJSON.routes[oldRouteID].endLoc.lat == parsedJSON.routes[i].endLoc.lat)
-                    && (parsedJSON.routes[oldRouteID].endLoc.long == parsedJSON.routes[i].endLoc.long)) {
-                    if ((parsedJSON.routes[i].startLoc.lat == parsedJSON.packets[minIndexPacket].initLocation.lat)
-                        && (parsedJSON.routes[i].startLoc.long == parsedJSON.packets[minIndexPacket].initLocation.long)) {
-                        newRouteIndex2 = i;
-                    }
-                }
-            }
-            parsedJSON.packets[minIndexPacket].state = 1;
-            parsedJSON.couriers[minIndexCourier].packets.push(parsedJSON.packets[minIndexPacket]);
-            var localOldRouteID = 0;
-            /*for (var i = 0; i < parsedJSON.couriers[minIndexCourier].routes.length; i++) {
-                if (parsedJSON.couriers[minIndexCourier].routes[i]._id == oldRouteID) {
-                    localOldRouteID = i;
-                }
-            }*/
-
-
-            console.log("oldRouteID= ", oldRouteID);
-            console.log("newRouteIndex1= ", newRouteIndex1);
-            console.log("newRouteIndex2= ", newRouteIndex2);
-
-            parsedJSON.couriers[minIndexCourier].remainingPieceCapacity = parsedJSON.couriers[minIndexCourier].remainingPieceCapacity - 1;
-            parsedJSON.couriers[minIndexCourier].remainingWeightCapacity = parsedJSON.couriers[minIndexCourier].remainingWeightCapacity - parsedJSON.packets[minIndexPacket].weight;
-
-            parsedJSON.routes[oldRouteID].state = 0;
-            parsedJSON.routes[newRouteIndex1].state = 1;
-            parsedJSON.routes[newRouteIndex2].state = 1;
-            console.log("oldRouteID= ", oldRouteID);
-
-            for (var i = 0; i < parsedJSON.couriers[minIndexCourier].routes.length; i++) {
-                console.log("route id: ", parsedJSON.couriers[minIndexCourier].routes[i]._id);
-            }
-            //parsedJSON.couriers[minIndexCourier].routes.splice(localOldRouteID, 1, parsedJSON.routes[newRouteIndex1], parsedJSON.routes[newRouteIndex2]);
-            parsedJSON.couriers[minIndexCourier].routes.splice(oldLocalRouteID, 1, parsedJSON.routes[newRouteIndex1], parsedJSON.routes[newRouteIndex2]);
-            console.log("------");
-            for (var i = 0; i < parsedJSON.couriers[minIndexCourier].routes.length; i++) {
-                console.log("route id: ", parsedJSON.couriers[minIndexCourier].routes[i]._id);
-            }
-            console.log("============");
-            //console.log(parsedJSON.couriers[minIndexCourier].routes.length);
-        }
-        else {
-            console.log("cozum kalmadi");
-        }
+        minRoute = findMinRouteValueForPackages(parsedJSON, minRoute);
+        findRoutesForMinRouteValueAndReplaceRoutes(parsedJSON, minRoute);
     }
-    var totalDistance = 0;
-    for (var i = 0; i < courierNumber; i++) {
-        if (parsedJSON.couriers[i].routes.length == 1) {
-            parsedJSON.couriers[i].routes[0].distance = 0;
-            console.log("Courier No:", i, " is free today");
 
-        } else {
-            for (var j = 0; j < parsedJSON.couriers[i].routes.length; j++) {
-                totalDistance = totalDistance + parsedJSON.couriers[i].routes[j].distance;
-            }
-
-        }
-    }
+    var totalDistance = calculateTotalDistance(parsedJSON.couriers)
 
     console.log("totalDistance= ", totalDistance);
     res.send(parsedJSON);
 
 
 });
+
+/**
+ * To create multiple courier with common weightCapacity and pieceCapacity
+ * 
+ * @param {any} couriersArray  (couriers array input)
+ * @param {any} couriersCount  (number of couriers which will create)
+ * @param {any} weightCapacity (weight capacity for a courier in kg)
+ * @param {any} pieceCapacity  (piece capacity for a courier, it can not be lower than one)
+ */
+function randomMultiCourierCreator(couriersArray, couriersCount, weightCapacity, pieceCapacity) {
+    if (pieceCapacity < 1) {
+        console.log("piece limit= ", pieceCapacity);
+        console.log("please choose higher value ");
+    }
+    for (var i = 0; i < couriersCount; i++) {
+        courierCreator(couriersArray, weightCapacity, pieceCapacity);
+    }
+}
+/**
+ * To create courier with weightCapacity and pieceCapacity
+ * 
+ * @param {any} couriersArray  (courier array input)
+ * @param {any} weightCapacity (weight capacity for a courier in kg)
+ * @param {any} pieceCapacity  (piece capacity for a courier, it can not be lower than one)
+ */
+function courierCreator(couriersArray, weightCapacity, pieceCapacity) {
+    var loc = {
+        "lat": randomRange(39, 40),
+        "long": randomRange(31, 32)
+    };
+    var courier = {
+        "_id": couriersArray.length,
+        "initLocation": loc,
+        "curLocation": loc,
+        "weightCapacity": weightCapacity,
+        "remainingWeightCapacity": weightCapacity,
+        "pieceCapacity": pieceCapacity,
+        "remainingPieceCapacity": weightCapacity,
+        "routes": [],
+        "packets": []
+    };
+    couriersArray.push(courier);
+}
+/**
+ * To create multi packet with random init location, common destination location and random wieght which creates between input values of weight
+ * 
+ * @param {any} packetsArray (packets array input)
+ * @param {any} packetCount  (number of packets which will create)
+ * @param {any} destLocation (common destination location for all packets)
+ * @param {any} minWeight    (min weight for random weight creation of packets)
+ * @param {any} maxWeight    (max weight for random weight creation of packets)
+ */
+function randomMultiPacketCreator(packetsArray, packetCount, destLocation, minWeight, maxWeight) {
+    for (var i = 0; i < packetCount; i++) {
+        var randomWeight = randomRange(minWeight, maxWeight);
+        packetCreator(packetsArray, destLocation, randomWeight)
+    }
+}
+/**
+ * To create packet with a packet weight and a destination location
+ * 
+ * @param {any} packetsArray (packets array input)
+ * @param {any} destLocation (destination location for new packet)
+ * @param {any} packetWeight (weight of new packet)
+ */
+function packetCreator(packetsArray, destLocation, packetWeight) {
+    var packet = {
+        "_id": packetsArray.length,
+        "initLocation": {
+            "lat": randomRange(39, 40),
+            "long": randomRange(31, 32)
+        },
+        "destLocation": destLocation,
+        "weight": randomRange(1, 2),
+        "state": 0,
+        "courier": {}
+    };
+    packetsArray.push(packet);
+}
+
+/**
+ * To create all routes which are avaliable
+ * 
+ * @param {any} db 
+ * @param {any} destLocation 
+ */
+function routeCreatorAll(db, destLocation) {
+    routeCreatorBetweenCourierAndDeliveryLocation(db, destLocation);
+    routeCreatorBetweenCourierAndPacketLocation(db);
+    routeCreatorBetweenPacketAndPacketLocation(db);
+    routeCreatorBetweenPacketAndDestinationLocation(db);
+}
+/**
+ * To create routes which are between couriers' start location to destinitaion location
+ * 
+ * @param {any} db (database which include couriers, routes, packets)
+ * @param {any} destLocation (common destination location )
+ */
+function routeCreatorBetweenCourierAndDeliveryLocation(db, destLocation) {
+    for (var i = 0; i < courierNumber; i++) {
+        var distanceBetweenPoints = math.distance([db.couriers[i].initLocation.lat, db.couriers[i].initLocation.long],
+            [db.packets[0].destLocation.lat, db.packets[0].destLocation.long]);
+        var route = {
+            "_id": db.routes.length,
+            "routeFromGoogle": "",
+            "distance": distanceBetweenPoints,
+            "startLoc": db.couriers[i].initLocation,
+            "endLoc": db.packets[0].destLocation,
+            "nearPacketsDistance": [],
+            "state": 0
+        };
+        db.routes.push(route);
+    }
+}
+/**
+ * To create routes which are between couriers' start location to packets' location
+ * 
+ * @param {any} db (database which include couriers, routes, packets)
+ */
+function routeCreatorBetweenCourierAndPacketLocation(db) {
+    for (var i = 0; i < courierNumber; i++) {
+        for (var j = 0; j < packetNumber; j++) {
+            var distanceBetweenPoints = math.distance([db.couriers[i].initLocation.lat, db.couriers[i].initLocation.long],
+                [db.packets[j].initLocation.lat, db.packets[j].initLocation.long]);
+            var route = {
+                "_id": db.routes.length,
+                "routeFromGoogle": "",
+                "distance": distanceBetweenPoints,
+                "startLoc": db.couriers[i].initLocation,
+                "endLoc": db.packets[j].initLocation,
+                "nearPacketsDistance": [],
+                "state": 0
+            };
+            db.routes.push(route);
+        }
+    }
+}
+/**
+ * To create routes which are between packets' location to packets' location
+ * 
+ * @param {any} db (database which include couriers, routes, packets)
+ */
+function routeCreatorBetweenPacketAndPacketLocation(db) {
+    for (var i = 0; i < packetNumber; i++) {
+        for (var j = 0; j < packetNumber; j++) {
+            //var x = parsedJSON.couriers[courierNumber].initLocation.lat;
+
+            var distanceBetweenPoints = math.distance([db.packets[i].initLocation.lat, db.packets[i].initLocation.long],
+                [db.packets[j].initLocation.lat, db.packets[j].initLocation.long]);
+
+            var route = {
+                "_id": db.routes.length,
+                "routeFromGoogle": "",
+                "distance": distanceBetweenPoints,
+                "startLoc": db.packets[i].initLocation,
+                "endLoc": db.packets[j].initLocation,
+                "nearPacketsDistance": [],
+                "state": 0
+            };
+            db.routes.push(route);
+        }
+    }
+}
+/**
+ * To create routes which are between packets' location to packets' destination location
+ * 
+ * @param {any} db (database which include couriers, routes, packets)
+ */
+function routeCreatorBetweenPacketAndDestinationLocation(db) {
+    for (var i = 0; i < packetNumber; i++) {
+        var distanceBetweenPoints = math.distance([db.packets[i].initLocation.lat, db.packets[i].initLocation.long],
+            [db.packets[i].destLocation.lat, db.packets[i].destLocation.long]);
+        var route = {
+            "_id": db.routes.length,
+            "routeFromGoogle": "",
+            "distance": distanceBetweenPoints,
+            "startLoc": db.packets[i].initLocation,
+            "endLoc": db.packets[i].destLocation,
+            "nearPacketsDistance": [],
+            "state": 0
+        };
+        db.routes.push(route);
+    }
+}
+/**
+ * To calculate extra distance value for adding package pickup
+ * 
+ * @param {any} (database which include couriers, routes, packets) 
+ */
+function calculateAddingRouteValue(db) {
+    for (var i = 0; i < db.routes.length; i++) {
+        for (var j = 0; j < packetNumber; j++) {
+            var point = [db.packets[j].initLocation.lat, db.packets[j].initLocation.long, 0];
+            var a = [db.routes[i].startLoc.lat, db.routes[i].startLoc.long, 0];
+            var b = [db.routes[i].endLoc.lat, db.routes[i].endLoc.long, 0];
+
+            var distance1 = math.distance([db.routes[i].startLoc.lat, db.routes[i].startLoc.long], [db.packets[j].initLocation.lat, db.packets[j].initLocation.long]);
+            var distance2 = math.distance([db.routes[i].endLoc.lat, db.routes[i].endLoc.long], [db.packets[j].initLocation.lat, db.packets[j].initLocation.long]);
+
+            var deltaDistance = - db.routes[i].distance + distance1 + distance2;
+
+            db.routes[i].nearPacketsDistance.push(deltaDistance);
+        }
+    }
+}
+/**
+ * To assign routes which are between couriers' start location to destination locations
+ * Note: It must be done before optimizing routes
+ * @param {any} (database which include couriers, routes, packets) 
+ */
+function firstRouteAssign(db) {
+    for (var i = 0; i < db.couriers.length; i++) {
+        db.couriers[i].routes.push(db.routes[i]);
+        db.routes[i].state = 1;
+    }
+}
+/**
+ * To find minimum route value for a package which is not assigned
+ * 
+ * @param {any} db (database which include couriers, routes, packets) 
+ * @param {any} minRoute 
+ *              .min (minimum value of routes value in near packets distance of using routes)
+ *              .minIndexCourier (index of courier for min value)
+ *              .minIndexLocalRoute (index of route for min value)
+ *              .minIndexPacket (index of packet for min value)
+ * @returns (minRoute)
+ */
+function findMinRouteValueForPackages(db, minRoute) {
+    for (var i = 0; i < db.couriers.length; i++) {
+        for (var j = 0; j < db.couriers[i].routes.length; j++) {
+            for (var k = 0; k < db.packets.length; k++) {
+                if ((db.couriers[i].routes[j].nearPacketsDistance[k] < minRoute.min) && (db.couriers[i].routes[j].nearPacketsDistance[k] != -1)) {
+                    if ((db.packets[k].weight < db.couriers[i].remainingWeightCapacity) && (db.couriers[i].remainingPieceCapacity > 0)) {
+                        minRoute.min = db.couriers[i].routes[j].nearPacketsDistance[k];
+                        minRoute.minIndexCourier = i;
+                        minRoute.minIndexLocalRoute = j;
+                        minRoute.minIndexPacket = k;
+                    }
+                }
+            }
+        }
+    }
+    return minRoute;
+}
+
+/**
+ * To find routes for min route value and replace them with old route into courier
+ * 
+ * @param {any} db (database which include couriers, routes, packets) 
+ * @param {any} minRoute 
+ *              .min (minimum value of routes value in near packets distance of using routes)
+ *              .minIndexCourier (index of courier for min value)
+ *              .minIndexLocalRoute (index of route for min value)
+ *              .minIndexPacket (index of packet for min value)
+ * @returns (minRoute)
+ */
+function findRoutesForMinRouteValueAndReplaceRoutes(db, minRoute) {
+    var newRouteIndex1 = -1;
+    var newRouteIndex2 = -1;
+
+    if (minRoute.minIndexLocalRoute != -1 && minRoute.minIndexCourier != -1) {
+        var oldLocalRouteID = minRoute.minIndexLocalRoute;
+        console.log("minIndexCourier= ", minRoute.minIndexCourier);
+        console.log("minIndexLocalRoute= ", minRoute.minIndexLocalRoute);
+        var oldRouteID = db.couriers[minRoute.minIndexCourier].routes[minRoute.minIndexLocalRoute]._id;
+        for (var i = 0; i < db.routes.length; i++) {
+            db.routes[i].nearPacketsDistance[minRoute.minIndexPacket] = -1;
+            if ((db.routes[oldRouteID].startLoc.lat == db.routes[i].startLoc.lat)
+                && (db.routes[oldRouteID].startLoc.long == db.routes[i].startLoc.long)) {
+                if ((db.routes[i].endLoc.lat == db.packets[minRoute.minIndexPacket].initLocation.lat)
+                    && (db.routes[i].endLoc.long == db.packets[minRoute.minIndexPacket].initLocation.long)) {
+                    newRouteIndex1 = i;
+                }
+            }
+            if ((db.routes[oldRouteID].endLoc.lat == db.routes[i].endLoc.lat)
+                && (db.routes[oldRouteID].endLoc.long == db.routes[i].endLoc.long)) {
+                if ((db.routes[i].startLoc.lat == db.packets[minRoute.minIndexPacket].initLocation.lat)
+                    && (db.routes[i].startLoc.long == db.packets[minRoute.minIndexPacket].initLocation.long)) {
+                    newRouteIndex2 = i;
+                }
+            }
+        }
+
+        db.packets[minRoute.minIndexPacket].state = 1;
+        db.couriers[minRoute.minIndexCourier].packets.push(db.packets[minRoute.minIndexPacket]);
+        var localOldRouteID = 0;
+
+        console.log("oldRouteID= ", oldRouteID);
+        console.log("newRouteIndex1= ", newRouteIndex1);
+        console.log("newRouteIndex2= ", newRouteIndex2);
+
+        db.couriers[minRoute.minIndexCourier].remainingPieceCapacity = db.couriers[minRoute.minIndexCourier].remainingPieceCapacity - 1;
+        db.couriers[minRoute.minIndexCourier].remainingWeightCapacity = db.couriers[minRoute.minIndexCourier].remainingWeightCapacity - db.packets[minRoute.minIndexPacket].weight;
+
+        db.routes[oldRouteID].state = 0;
+        db.routes[newRouteIndex1].state = 1;
+        db.routes[newRouteIndex2].state = 1;
+        console.log("oldRouteID= ", oldRouteID);
+
+        for (var i = 0; i < db.couriers[minRoute.minIndexCourier].routes.length; i++) {
+            console.log("route id: ", db.couriers[minRoute.minIndexCourier].routes[i]._id);
+        }
+        db.couriers[minRoute.minIndexCourier].routes.splice(oldLocalRouteID, 1, db.routes[newRouteIndex1], db.routes[newRouteIndex2]);
+        console.log("------");
+        for (var i = 0; i < db.couriers[minRoute.minIndexCourier].routes.length; i++) {
+            console.log("route id: ", db.couriers[minRoute.minIndexCourier].routes[i]._id);
+        }
+        console.log("============");
+        //console.log(parsedJSON.couriers[minIndexCourier].routes.length);
+    }
+    else {
+        console.log("cozum kalmadi");
+    }
+    return minRoute
+}
+/**
+ * To calculate distance for courier
+ * 
+ * @param {any} couriersArray (courier array input)
+ * @returns (distance for courier)
+ */
+function calculateDistanceForCourier(couriersArray) {
+    var distanceCourier = 0
+    for (var i = 0; i < couriersArray.routes.length; i++) {
+        distanceCourier = distanceCourier + couriersArray.routes[i].distance;
+    }
+    return distanceCourier;
+}
+/**
+ * To calculate total distance for couriers
+ * 
+ * @param {any} couriersArray (courier array input)
+ * @returns (total distance for couriers)
+ */
+function calculateTotalDistance(couriersArray) {
+    var totalDistance = 0;
+    for (var i = 0; i < couriersArray.length; i++) {
+        totalDistance = totalDistance + calculateDistanceForCourier(couriersArray[i]);
+    }
+    return totalDistance;
+}
+
+/**
+ * To create random float number between min and max inputs
+ * 
+ * @param {any} min (min value of random number)
+ * @param {any} max (max value of random number)
+ * @returns 
+ */
+function randomRange(min, max) {
+    return (min + (max - min) * Math.random());
+}
 
 app.listen(3000);
