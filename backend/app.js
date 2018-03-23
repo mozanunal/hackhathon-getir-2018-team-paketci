@@ -16,9 +16,11 @@ app.all('/*', function (req, res, next) {
 /*
 Is it really working?
 */
-app.get('/', function (req, res) {
-    res.send('hello world');
-});
+app.use('/', express.static('public'))
+
+// app.get('/', function (req, res) {
+//     res.send('hello world');
+// });
 
 app.get('/courierRouter', function (req, res) {
 

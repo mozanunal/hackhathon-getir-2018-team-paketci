@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href='favicon.ico'>
+
+    <title>Paketci</title>
+
+    <!-- Bootstrap core CSS -->
+    <link rel="stylesheet" href='styles/bootstrap.css'>
+    <link rel="stylesheet" href='styles/layout.css'>
+    <link rel="stylesheet" href="http://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <script src="scripts/jquery.min.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+
+
+</head>
+
+<body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href=> Paketçi </a>
+            </div>
+            <div class="collapse navbar-collapse">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href=>
+                            <i class="ion-ios-home"></i> Home</a>
+                    </li>
+                    <li>
+                        <a href=>
+                            <i class="ion-ios-list" aria-hidden="true"></i> Packets</a>
+                    </li>
+                    <li>
+                        <a href=>
+                            <i class="ion-ios-list" aria-hidden="true"></i> Couriers</a>
+                    </li>
+                    <li>
+                        <a href=>
+                            <i class="ion-ios-pulse-strong"></i> Real Time Monitor </a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a href=>
+                            <i class="ion-log-out"></i> Logout</a>
+                    </li>
+                    <li>
+                        <a href=>
+                            <small> Version 0.0.1 </small>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" ng-app="myApp" ng-controller="myCtrl">
+        <div class="row">
+            <div class="col-md-9">
+                <div id="map" style=" height:500px; width:850px;"></div>
+            </div>
+            <div class="col-md-3">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"> Couriers </h3>
+                    </div>
+                    <div class="panel-body" style="overflow-y: auto; height:500px;">
+                        <ul class="list-group">
+                            <a href="#" class="list-group-item" ng-repeat="courier in couriers">
+                                <div ng-click="drawCourierRoute(courier._id)">
+                                    <b>Courier {{courier._id}}</b>
+
+                                    <div align="right">
+                                        {{courier.pieceCapacity-courier.remainingPieceCapacity}} piece {{fmtF(courier.weightCapacity-courier.remainingWeightCapacity,1)}}kg
+                                    </div>
+                                    <small>Loc: {{fmtF(courier.curLocation.lat,5)}}, {{fmtF(courier.curLocation.long,5)}} </small>
+                                </div>
+                            </a>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <ul class="pagination">
+                <li>
+                    <a ng-click="getCreate()" href="#"> Create Random Assets </a>
+                </li>
+                <li>
+                    <a ng-click="getOptimize()" href="#"> Optimize Routes </a>
+                </li>
+                <li>
+                    <a ng-click="getAssets()" href="#"> Get Assets </a>
+                </li>
+                <li>
+                    <a ng-click="prevPage()" href="#"> Back </a>
+                </li>
+                <li>
+                    <a ng-click="nextPage()" href="#"> Next </a>
+                </li>
+            </ul>
+            <p>
+                {{message}}
+            </p>
+            <div class="row">
+                Courier Number:<input type='number' ng-model='courierNumber' ng-init="courierNumber=3">
+                Packet Number:<input type='number' ng-model='packetNumber' ng-init="packetNumber=10">
+                Weight Capacity:<input type='number' ng-model='weightCapacity' ng-init="weightCapacity=20">
+                PieceCapacity:<input type='number' ng-model='pieceCapacity' ng-init="pieceCapacity=8">
+            </div>
+            <div class="row">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <td> Location </td>
+                            <td> Destination </td>
+                            <td> Weight </td>
+                            <td> State </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr ng-repeat="packet in packetsToShow">
+                            <td>{{ packet.initLocation }}</td>
+                            <td>{{ packet.destLocation }}</td>
+                            <td>{{ fmtF(packet.weight,1) }}</td>
+                            <td>{{ packet.state }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row">
+
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        var map;
+        var polyLine;
+        var directionsService;
+        var directionsDisplay;
+        var gMarkers = [];
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: new google.maps.LatLng(40.74, -111.83),
+                mapTypeId: 'terrain'
+            });
+            directionsService = new google.maps.DirectionsService;
+            directionsDisplay = new google.maps.DirectionsRenderer;
+            directionsDisplay.setMap(map);
+        }
+        function addMarkerCourier(lat, lng, name) {
+            var image = {
+                url: 'images/logo/courier.png',
+                scaledSize: new google.maps.Size(32, 32),
+            };
+            var marker = new google.maps.Marker({
+                position: { lat: lat, lng: lng },
+                icon: image,
+                map: map,
+                title: name
+            });
+            gMarkers.push(marker);
+        }
+        function addMarkerPacket(lat, lng, name) {
+            var image = {
+                url: 'images/logo/package_black.png',
+                scaledSize: new google.maps.Size(24, 24),
+            };
+            var marker = new google.maps.Marker({
+                position: { lat: lat, lng: lng },
+                icon: image,
+                map: map,
+                title: name
+            });
+            gMarkers.push(marker);
+        }
+        function addMarkerDestination(lat, lng, name) {
+            var image = {
+                url: 'images/logo/desination.png',
+                scaledSize: new google.maps.Size(20, 32),
+            };
+            var marker = new google.maps.Marker({
+                position: { lat: lat, lng: lng },
+                icon: image,
+                map: map,
+                title: name
+            });
+            gMarkers.push(marker);
+        }
+
+        function clearMarkers() {
+            for (i = 0; i < gMarkers.length; i++) {
+                gMarkers[i].setMap(null);
+            }
+        }
+
+        function calculateAndDisplayRoute(paths) {
+
+            /*
+            Arrange paths as waypoints expect last and first points
+            last and first points should add as oringin and destination
+            */
+            console.log('paths');
+            console.log(paths);
+            var waypoints = [];
+            for (i = 0; i < (paths.length - 1); i++) {
+                var waypoint = {
+                    location: paths[i],
+                    stopover: false
+                };
+                waypoints.push(waypoint);
+            }
+            console.log('waypoints');
+            console.log(waypoints);
+
+            directionsService.route({
+                origin: paths[0],
+                destination: paths[paths.length - 1],
+                waypoints: waypoints,
+                travelMode: 'DRIVING',
+                provideRouteAlternatives: false,
+            }, function (response, status) {
+                if (status === 'OK') {
+                    directionsDisplay.setDirections(response);
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
+        }
+
+        window.eqfeed_callback = function (results) {
+
+        }
+
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function ($scope, $http) {
+
+
+            $scope.getCreate = function () {
+                var params = {
+                    "courierNumber": $scope.courierNumber,
+                    "packetNumber": $scope.packetNumber,
+                    "weightCapacity": $scope.weightCapacity,
+                    "pieceCapacity": $scope.pieceCapacity
+                };
+                var url = "http://localhost:3000/api/create/"+$scope.courierNumber+"/"+$scope.packetNumber+"/"+ $scope.weightCapacity+"/"+$scope.pieceCapacity;
+                console.log(params);
+
+                $http.get( url )
+                    .then(function (response) {
+                        console.log(response.data);
+                        $scope.message = "Created."
+                    });
+            };
+
+            $scope.fmtF = function (i, j) {
+                return i.toFixed(j);
+            };
+
+            $scope.getOptimize = function () {
+                $http.get("http://localhost:3000/api/routeOptimize")
+                    .then(function (response) {
+                        console.log(response.data);
+                        $scope.message = "Route Optimized."
+                    });
+            };
+
+            $scope.getAssets = function () {
+                /* clear markers and lines*/
+                clearMarkers();
+                try {
+                    polyLine.setMap(null);
+                } catch (error) {
+                    console.log(error);
+                }
+                //pagination system
+                $scope.linePerPage = 10;
+                $scope.arrayPosition = 0;
+                $scope.nextPage = function () {
+                    $scope.arrayPosition += $scope.linePerPage;
+                    console.log("nextpage");
+                    $scope.packetsToShow = $scope.packets.slice($scope.arrayPosition, $scope.arrayPosition + $scope.linePerPage);
+                }
+                $scope.prevPage = function () {
+                    $scope.arrayPosition -= $scope.linePerPage;
+                    console.log("prevpage");
+                    $scope.packetsToShow = $scope.packets.slice($scope.arrayPosition, $scope.arrayPosition + $scope.linePerPage);
+                }
+
+                //get packets from server
+                $http.get("/api/packet")
+                    .then(function (response) {
+                        console.log(response.data);
+                        $scope.packets = response.data;
+                        $scope.packetsToShow = response.data.slice($scope.arrayPosition, $scope.linePerPage);
+                        $scope.message = "Packages are received."
+                        $scope.packets.forEach(packet => {
+                            addMarkerPacket(packet.initLocation.lat, packet.initLocation.long, packet._id.toString());
+                            addMarkerDestination(packet.destLocation.lat, packet.destLocation.long, "Destination");
+                        });
+                    });
+                //get couriers from server
+                $http.get("/api/courier")
+                    .then(function (response) {
+                        console.log(response.data);
+                        $scope.couriers = response.data;
+                        $scope.couriersToShow = response.data;
+                        $scope.couriers.forEach(courier => {
+                            addMarkerCourier(courier.curLocation.lat, courier.curLocation.long, courier._id.toString());
+
+                        });
+                    });
+            };
+
+            $scope.drawCourierRoute = function (id) {
+                try {
+                    polyLine.setMap(null);
+                } catch (error) {
+                    console.log(error);
+                }
+
+
+                var path = [];
+                var mycour = $scope.couriers[id];
+                var myroutes = mycour.routes;
+
+                console.log("mycour");
+                console.log(mycour);
+
+                mycour.routes.forEach(route => {
+                    var beginCoor = { lat: route.startLoc.lat, lng: route.startLoc.long };
+                    var endCoor = { lat: route.endLoc.lat, lng: route.endLoc.long };
+                    if (path.length == 0) {
+                        path.push(beginCoor);
+                    }
+                    path.push(endCoor);
+                });
+                console.log("path");
+                console.log(path);
+                var lineSymbol = {
+                    path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW
+                };
+                polyLine = new google.maps.Polyline({
+                    path: path,
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 0.5,
+                    strokeWeight: 2,
+                    icons: [{
+                        icon: lineSymbol,
+                        offset: '8%'
+                    }],
+                });
+                polyLine.setMap(map);
+                calculateAndDisplayRoute(path);
+            }
+        });
+
+        app.filter('range', function () {
+            return function (input, total) {
+                total = parseInt(total);
+                for (var i = 0; i < total; i++)
+                    input.push(i);
+                return input;
+            };
+        });
+
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC4UfPu9GI0Jrb4QkHOstJusKobgf1ncxw&callback=initMap">
+    </script>
+
+
+
+</body>
+
+</html>
