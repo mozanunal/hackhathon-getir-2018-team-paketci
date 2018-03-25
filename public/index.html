@@ -264,7 +264,7 @@
                     "weightCapacity": $scope.weightCapacity,
                     "pieceCapacity": $scope.pieceCapacity
                 };
-                var url = "http://localhost:3000/api/create/"+$scope.courierNumber+"/"+$scope.packetNumber+"/"+ $scope.weightCapacity+"/"+$scope.pieceCapacity;
+                var url = "/api/create/"+$scope.courierNumber+"/"+$scope.packetNumber+"/"+ $scope.weightCapacity+"/"+$scope.pieceCapacity;
                 console.log(params);
 
                 $http.get( url )
@@ -279,7 +279,7 @@
             };
 
             $scope.getOptimize = function () {
-                $http.get("http://localhost:3000/api/routeOptimize")
+                $http.get("/api/routeOptimize")
                     .then(function (response) {
                         console.log(response.data);
                         $scope.message = "Route Optimized."
